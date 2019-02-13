@@ -1,5 +1,7 @@
 Manifest-Version: 1.0
 Built-By: Administrator
+Class-Path: lib/netty-all-4.1.30.Final.jar lib/fastjson-1.2.55.jar
 Build-Jdk: 1.8.0_66
 Created-By: Maven Integration for Eclipse
+Main-Class: com.demo.netty.NettyClient
 

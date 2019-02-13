@@ -5,33 +5,26 @@ import static com.demo.netty.protocal.common.Command.*;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.demo.netty.protocal.common.request.LoginRequestPacket;
-import com.demo.netty.protocal.common.request.MessageRequestPacket;
-import com.demo.netty.protocal.common.request.Packet;
-import com.demo.netty.protocal.common.response.LoginResponsePacket;
-import com.demo.netty.protocal.common.response.MessageResponsePacket;
+import com.demo.netty.protocal.common.packet.Packet;
+import com.demo.netty.protocal.common.packet.request.CreateGroupRequestPacket;
+import com.demo.netty.protocal.common.packet.request.JoinGroupRequestPacket;
+import com.demo.netty.protocal.common.packet.request.LoginRequestPacket;
+import com.demo.netty.protocal.common.packet.request.MessageRequestPacket;
+import com.demo.netty.protocal.common.packet.response.CreateGroupResponsePacket;
+import com.demo.netty.protocal.common.packet.response.JoinGroupResponsePacket;
+import com.demo.netty.protocal.common.packet.response.LoginResponsePacket;
+import com.demo.netty.protocal.common.packet.response.MessageResponsePacket;
 import com.demo.netty.protocal.serialize.Serializer;
 import com.demo.netty.protocal.serialize.impl.JSONSerializer;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
 
 public class PacketCodec {
-	private static PacketCodec instance;
-
-	private final static int MAGIC_NUMBER = 0x12345678;
+	public final static int MAGIC_NUMBER = 0x12345678;
 	private static final Map<Byte, Class<? extends Packet>> packetTypeMap;
 	private static final Map<Byte, Serializer> serializerMap;
 
-	public static PacketCodec getInstance() {
-		if (instance == null) {
-			synchronized (PacketCodec.class) {
-				instance = new PacketCodec();
-				return instance;
-			}
-		}
-		return instance;
-	}
+	public static final PacketCodec INSTANCE = new PacketCodec();
 
 	// 静态代码块、修饰变量、修饰方法、静态类、静态导包（指导入目的包的静态资源）
 	static {
@@ -40,15 +33,17 @@ public class PacketCodec {
 		packetTypeMap.put(LOGIN_RESPONSE, LoginResponsePacket.class);
 		packetTypeMap.put(MESSAGE_REQUEST, MessageRequestPacket.class);
 		packetTypeMap.put(MESSAGE_RESPONSE, MessageResponsePacket.class);
+		packetTypeMap.put(GROUP_REQUEST, CreateGroupRequestPacket.class);
+		packetTypeMap.put(GROUP_RESPONSE, CreateGroupResponsePacket.class);
+		packetTypeMap.put(JOIN_GROUP_REQUEST, JoinGroupRequestPacket.class);
+		packetTypeMap.put(JOIN_GROUP_RESPONSE, JoinGroupResponsePacket.class);
 
 		serializerMap = new HashMap<>();
 		Serializer serializer = new JSONSerializer();
 		serializerMap.put(serializer.getSerializerAlgorithm(), serializer);
 	}
 
-	public ByteBuf encode(ByteBufAllocator ctx, Packet packet) {
-		ByteBuf buffer = ctx.buffer();
-
+	public ByteBuf encode(ByteBuf buffer, Packet packet) {
 		byte[] bytes = Serializer.DEFAULT.serialize(packet);
 
 		// 1.魔数 检查是否是本系统的自定义协议

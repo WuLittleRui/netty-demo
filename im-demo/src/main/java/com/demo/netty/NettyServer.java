@@ -1,10 +1,11 @@
 package com.demo.netty;
 
-import com.demo.netty.handler.ServerHandler;
+import com.demo.netty.codec.Spliter;
+import com.demo.netty.handler.IMHandler;
+import com.demo.netty.handler.PacketCodecHandler;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelOption;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
@@ -22,15 +23,16 @@ public class NettyServer {
 		NioEventLoopGroup worker = new NioEventLoopGroup();
 		// 给引导类配置两大线程组，这个引导类的线程模型也就定型了
 		serverBootstrap.group(boss, worker)
-//				.option(ChannelOption.TCP_NODELAY, true)
-//				.option(ChannelOption.SO_KEEPALIVE, true)
+				// .option(ChannelOption.TCP_NODELAY, true)
+				// .option(ChannelOption.SO_KEEPALIVE, true)
 				// 指定服务端的 IO 模型 NioServerSocketChannel
 				.channel(NioServerSocketChannel.class).childHandler(new ChannelInitializer<NioSocketChannel>() {
 					// 定义后续每条连接的数据读写，业务处理逻辑
 					@Override
 					protected void initChannel(NioSocketChannel ch) throws Exception {
-//						ch.pipeline().addLast(new StringDecoder());
-						ch.pipeline().addLast(new ServerHandler());
+						ch.pipeline().addLast(new Spliter());
+						ch.pipeline().addLast(PacketCodecHandler.INSTANCE);
+						ch.pipeline().addLast(IMHandler.INSTANCE);
 					}
 				}).bind(port);
 		// 用于指定在服务端启动过程中的一些逻辑，通常情况下，用不着这个方法

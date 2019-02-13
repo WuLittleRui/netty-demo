@@ -3,13 +3,15 @@ package com.demo.netty;
 import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 
-import com.demo.netty.handler.ClientHandler;
-import com.demo.netty.protocal.common.PacketCodec;
-import com.demo.netty.protocal.common.request.MessageRequestPacket;
+import com.demo.netty.codec.Spliter;
+import com.demo.netty.handler.IMHandler;
+import com.demo.netty.handler.PacketCodecHandler;
+import com.demo.netty.handler.client.ClientLoginHandler;
+import com.demo.netty.protocal.command.ConsoleCommandManager;
+import com.demo.netty.protocal.command.LoginConsoleCommand;
 import com.demo.netty.util.LoginUtil;
 
 import io.netty.bootstrap.Bootstrap;
-import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
@@ -41,7 +43,11 @@ public class NettyClient {
 						// ch.pipeline().addLast(new StringEncoder());
 						// 调用 addLast() 方法
 						// 添加一个逻辑处理器，这个逻辑处理器为的就是在客户端建立连接成功之后，向服务端写数据
-						ch.pipeline().addLast(new ClientHandler());
+						ch.pipeline().addLast(new Spliter()); // 固定长度
+						ch.pipeline().addLast(PacketCodecHandler.INSTANCE);
+						ch.pipeline().addLast(ClientLoginHandler.INSTANCE);
+						// ch.pipeline().addLast(new ClientAuthHandler());
+						ch.pipeline().addLast(IMHandler.INSTANCE);
 					}
 
 				});
@@ -68,21 +74,16 @@ public class NettyClient {
 	}
 
 	private static void startConsoleThread(Channel channel) {
+		LoginConsoleCommand loginConsoleCommand = new LoginConsoleCommand();
+		ConsoleCommandManager consoleCommandManager = new ConsoleCommandManager();
+		Scanner scanner = new Scanner(System.in);
+
 		new Thread(() -> {
 			while (!Thread.interrupted()) {
 				if (LoginUtil.hasLogin(channel)) {
-					System.out.println("输入消息发送至服务端: ");
-					Scanner scanner = new Scanner(System.in);
-					String line = scanner.nextLine();
-					if (line.equalsIgnoreCase("exit")) {
-						break;
-					}
-
-					MessageRequestPacket messageRequestPacket = new MessageRequestPacket();
-					messageRequestPacket.setMessage(line);
-					ByteBuf buffer = PacketCodec.getInstance().encode(channel.alloc(), messageRequestPacket);
-
-					channel.writeAndFlush(buffer);
+					consoleCommandManager.exec(scanner, channel);
+				} else {
+					loginConsoleCommand.exec(scanner, channel);
 				}
 			}
 		}).start();
